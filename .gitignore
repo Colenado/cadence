@@ -1,0 +1,30 @@
+# Build artifacts
+node_modules/
+dist/
+build/
+*.bak
+*.bak-*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local dev
+*.log
+.env
+.env.local
+
+# Design artifacts (pre-implementation mocks, not part of the app)
+design-mocks/
+
+# Test / dev scripts
+scripts/
+test/
+_seed/
+
+# Temporary / local screenshots (the ones in screenshots/ are committed)
+*.tmp.png
