@@ -58,30 +58,24 @@ You can **Save and exit** at any step. Your work is auto-saved (debounced 400ms)
 
 When you finish, you land on the plan view — the deliverable you'll hand to stakeholders. It's editable inline: click any text to change it.
 
-![Plan view — top with dashboard, byline, and Problem section](screenshots/plan-top.png)
+![Plan view — top with hero, big win, and stat strip](screenshots/plan-top.png)
 
-The plan view has 8 sections plus a dashboard at the top:
+The plan view is a long-scroll document built to get approved. It opens with a sticky topbar, a hero with the project title and a one-line summary, then the **big win** — the headline number that makes the case (e.g. `91 → 65 days`) parsed from your first success metric. Below the win, a 3-stat strip shows **Reach**, **Duration**, and **Effort**. The 8 sections follow:
 
-1. **Dashboard** — metrics row (phases done, hours, open questions, etc.) + visual phase timeline
-2. **Problem** — the issue in plain terms
-3. **Root cause** — evidence you ruled out non-learning causes
-4. **Approach** — intervention mix (with editable amounts for scope estimation)
-5. **Deliverables** — what the L&D team will ship
-6. **Plan** — phases, tasks, owners, dates, RACI, risks
-7. **Win** — success metrics, review cadence, sustainment
-8. **Open questions** — unknowns tracked with owner/due/status
-9. **Check-ins** — project health over time (added as the project runs)
-10. **Out of scope** — things considered and rejected
+1. **Problem** — the issue in plain terms, with stakeholder map and business case breakdown
+2. **Root cause** — evidence you ruled out non-learning causes
+3. **Approach** — three reinforcing parts (the intervention mix), each linked to a deliverable
+4. **Deliverables** — what the L&D team will ship (name, format, owner)
+5. **Plan** — phases with owners, dates, and deliverables
+6. **Win** — success metrics as a 2x2 card grid (each with from → to and rest)
+7. **Open questions** — unknowns tracked with owner/due/status
+8. **Out of scope** — things considered and rejected
 
-### 4. Validate the plan
+The whole document is designed to be readable top-to-bottom in a single scroll — no dashboards, no check-ins, no execution tracking. Cadence is for *getting the plan approved*, not for running the project.
 
-Click the **score ring** in the bottom-right of the plan view. You'll get a 0-100 score across 8 criteria (project basics, audience, approach, plan, stakeholder map, open questions, win, sustainment) with specific gaps to fix.
+![Full plan view — all 8 sections](screenshots/plan-full.png)
 
-![Validate plan panel](screenshots/validate-panel.png)
-
-Click **Fix the gaps** to jump straight to the field that needs work — the wizard highlights gap fields in red with a "needs fix" tag.
-
-### 5. Estimate scope
+### 4. Estimate scope
 
 Click **∑ Scope** in the section nav. The scope estimator turns "how much work is this?" into a defensible number using ATD-defaulted hours-per-deliverable ratios (editable in the benchmark table).
 
@@ -89,13 +83,7 @@ Click **∑ Scope** in the section nav. The scope estimator turns "how much work
 
 If you have amounts in your intervention mix, the estimator will auto-fill from those. Otherwise add deliverables from the benchmark list and enter unit counts. The estimator applies a Design/Develop/Review/Revise split and writes the total to the project.
 
-### 6. Track check-ins
-
-As the project progresses, scroll to section 08 **Check-ins** in the plan view and log status updates. Each check-in has a date, status (on-track / at-risk / blocked), notes, blockers, and decisions. The timeline strip at the top of the section shows project health over time.
-
-![Plan view — check-ins with timeline](screenshots/plan-checkins.png)
-
-### 7. Export
+### 5. Export
 
 Click the **↓** button in the bottom-right of the plan view. You get five options:
 
@@ -121,33 +109,19 @@ A project is a single JSON object in IndexedDB:
     "title": "Reduce ramp time for new field sales reps",
     "sponsor": "Maria Chen, VP Sales",
     "problemHeadline": "Reduce ramp time from 90 to 60 days",
+    "audienceReach": 60,
+    "audienceReachUnit": "reps/yr",
     "interventions": [
       { "value": "ilt", "amount": 6, "detail": "4 × 90-min modules" }
     ],
     "phases": [...],
     "openQuestions": [...],
-    "checkIns": [...],
     "outOfScope": [...]
   }
 }
 ```
 
 Edits auto-save to IndexedDB every 400ms. Closing the tab doesn't lose your work.
-
-## The 8 validation criteria
-
-The plan score (0-100) is the average of 8 criteria:
-
-| Criterion | What it checks |
-|---|---|
-| **Project basics** | Title + sponsor filled |
-| **Audience & business case** | Role + size + baseline cost |
-| **Approach** | ≥1 intervention with numeric amount |
-| **Plan** | Phases with dates + tasks with owners + statuses |
-| **Stakeholder map** | Sponsor + doer + SME + resister/champion |
-| **Open questions** | ≥1 tracked, none blocked without owner |
-| **Define the win** | Metrics + review cadence |
-| **Sustainment plan** | Post-launch owner or handoff plan |
 
 ## Architecture
 
@@ -169,7 +143,7 @@ The app uses React 18 (UMD build) and Babel Standalone, both loaded from a CDN. 
 
 ### Change the accent color
 
-Click the accent swatch in the topbar (next to the theme toggle). Pick any of 8 presets or use the custom hex picker. The accent flows through section numbers, the validate score ring, status pills, the slide deck, and the PPTX theme.
+Click the accent swatch in the topbar (next to the theme toggle). Pick any of 8 presets or use the custom hex picker. The accent flows through section numbers, the big win arrow, the stat strip, the slide deck, and the PPTX theme.
 
 ### Switch to light mode
 
