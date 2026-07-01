@@ -5533,175 +5533,213 @@ const renderStandaloneSlides = (project, template) => {
   const oqLabel = { open: 'Open', answered: 'Answered', blocked: 'Blocked' };
   const updatedLabel = escapeHTML(formatDate(project.updatedAt));
 
-  // Each slide: <section><div class="masthead">...</div><div class="slide-body">...</div><div class="slide-footer">...</div></section>
-  // Edit the text inside each .slide-body div. The structure stays the same.
+  // Reach: prefer audienceReach, else parse first number from audienceSize
+  let reachValue = f.audienceReach || 0;
+  if (!reachValue && f.audienceSize) {
+    const parsed = parseAudienceSize(f.audienceSize);
+    if (parsed) reachValue = parsed.value;
+  }
+  const reachSuffix = (f.audienceReachUnit || 'reps/yr').replace(/^reps\//, '');
+
+  // Duration: sum parseDuration across phases; fallback to f.timeline prefix
+  let durationSuffix = 'wks';
+  let durationDisplay = '';
+  const phaseWeeks = filledPhases.reduce((sum, p) => sum + (parseDuration(p.duration) || 0), 0);
+  if (phaseWeeks > 0) {
+    durationDisplay = Math.round(phaseWeeks).toString();
+  } else if (f.timeline) {
+    durationDisplay = f.timeline.split(/[→\-]/)[0].trim().slice(0, 4) || '\u2014';
+    durationSuffix = '';
+  } else {
+    durationDisplay = '\u2014';
+  }
+
+  // Effort: phases + tasks + hours + stakeholders count
+  const taskCount = filledPhases.reduce((sum, p) => sum + ((p.tasks || []).filter((t) => t && t.name).length), 0);
+  const totalEffort = f.totalEffort || 0;
+  const stakeholderCount = (f.stakeholders || []).filter((s) => s && s.name).length;
+  const effortNum = filledPhases.length;
+  const effortSuffix = 'ph';
+  const effortSub = (taskCount ? taskCount + ' task' + (taskCount === 1 ? '' : 's') + ' \u00b7 ' : '') +
+    (totalEffort ? totalEffort.toLocaleString() + ' hrs \u00b7 ' : '') +
+    (stakeholderCount ? stakeholderCount + ' stakeholder' + (stakeholderCount === 1 ? '' : 's') : '');
+
+  // Win: parse first metric for "X to Y unit" or "above X% (currently Y%)" patterns
+  const firstMetricText = filledMetrics[0] || '';
+  const winTransition = parseWinTransition(firstMetricText);
+  const winMetricsAll = filledMetrics.map((m) => parseWinTransition(m)).filter(Boolean);
+
+  // Helper: build a slide with masthead, body, speaker note, and footer placeholder
+  const makeSlide = (dataName, mastheadLabel, bodyContent, speakerNote) => {
+    return '<section data-name="' + dataName + '">' +
+      '<div class="masthead"><span class="accent">' + escapeHTML(mastheadLabel) + '</span><span>' + updatedLabel + '</span></div>' +
+      '<div class="slide-body">' + bodyContent + '</div>' +
+      '<aside class="notes">' + escapeHTML(speakerNote) + '</aside>' +
+      '<div class="slide-footer"><span>Cadence</span><span class="num">__NUM__</span> / <span class="total">__TOTAL__</span></div>' +
+    '</section>';
+  };
+
+  // 1. Cover (with 3-stat strip)
+  let coverStats = '<div class="cover-stats">';
+  coverStats += '<div class="cover-stat"><div class="lbl">Reach</div><div class="num">~' + (reachValue || '\u2014') + '<span class="a">/' + escapeHTML(reachSuffix) + '</span></div><div class="sub">' + escapeHTML(f.audienceRole || 'audience per year') + (f.audienceContext ? ' \u00b7 ' + escapeHTML(f.audienceContext) : '') + '</div></div>';
+  coverStats += '<div class="cover-stat"><div class="lbl">Duration</div><div class="num">' + escapeHTML(durationDisplay) + '<span class="a">' + escapeHTML(durationSuffix) + '</span></div><div class="sub">' + (f.timeline ? 'Pilot window \u00b7 ' + escapeHTML(f.timeline) : 'from phase durations') + '</div></div>';
+  coverStats += '<div class="cover-stat"><div class="lbl">Effort</div><div class="num">' + effortNum + '<span class="a">' + effortSuffix + '</span></div><div class="sub">' + (effortSub || 'phases, tasks, design hours') + '</div></div>';
+  coverStats += '</div>';
+  if (f.businessCase && f.businessCase.intervention) {
+    coverStats += '<div class="cover-investment"><b>Investment:</b> ' + escapeHTML(f.businessCase.intervention) + ' \u2014 not material to the decision.</div>';
+  }
+  const coverBody = '<div class="slide-title-body">' +
+    '<div class="eyebrow">Cadence project plan</div>' +
+    '<h1>' + escapeHTML(f.title || 'Untitled project') + '</h1>' +
+    '<div class="title-rule"></div>' +
+    '<p class="title-meta">' + escapeHTML(f.problemHeadline || '') + '</p>' +
+    coverStats +
+  '</div>';
   const sections = [];
+  sections.push(makeSlide('Cover', template.name, coverBody, 'Open with: here\u2019s the project, here\u2019s what we set out to do.'));
 
-  // 1. Title
-  sections.push(
-    '<section data-name="Title">' +
-      '<div class="masthead"><span class="accent">' + escapeHTML(template.name) + '</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-title-body">' +
-        '<div class="eyebrow">Cadence project plan</div>' +
-        '<h1>' + escapeHTML(f.title || 'Untitled project') + '</h1>' +
-        '<div class="title-rule"></div>' +
-        '<p class="title-meta">' + escapeHTML(f.problemHeadline || '') + '</p>' +
-      '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">01</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  // 2. Win hero (big number punchline)
+  let winHeroBody;
+  if (winTransition) {
+    const winLabel = winLabelForUnit(winTransition.unit);
+    let winHeroBig = '<div class="win-hero-label">Target win \u00b7 ' + escapeHTML(winLabel) + '</div>';
+    winHeroBig += '<div class="win-hero-block">';
+    winHeroBig += '<div class="from">' + escapeHTML(winTransition.from) + '</div>';
+    winHeroBig += '<div class="arrow">\u2192</div>';
+    winHeroBig += '<div class="to">' + escapeHTML(winTransition.to) + '</div>';
+    winHeroBig += '<div class="unit">' + escapeHTML(winTransition.unit) + '</div>';
+    winHeroBig += '</div>';
+    if (winMetricsAll.length > 1) {
+      winHeroBig += '<div class="win-detail-cards">';
+      for (let i = 1; i < Math.min(4, winMetricsAll.length); i++) {
+        const m = winMetricsAll[i];
+        const labelText = m.label || winLabelForUnit(m.unit);
+        winHeroBig += '<div class="win-detail-card"><div class="k">' + escapeHTML(labelText) + '</div><div class="v"><span class="from">' + escapeHTML(m.from) + '</span><span class="to">' + escapeHTML(m.to) + '</span></div></div>';
+      }
+      winHeroBig += '</div>';
+    }
+    winHeroBody = winHeroBig;
+  } else if (firstMetricText) {
+    winHeroBody = '<div class="win-hero-label">Target win \u00b7 the headline outcome</div><div class="win-hero-lede">' + escapeHTML(firstMetricText) + '</div>';
+  } else {
+    winHeroBody = '<p class="empty">No success metric defined yet \u2014 fill in step 6 to add a target win.</p>';
+  }
+  sections.push(makeSlide('WinHero', template.name + ' \u00b7 The win', winHeroBody, 'Pause here. This is the punchline. Let the number land.'));
 
-  // 2. Problem
-  sections.push(
-    '<section data-name="Problem">' +
-      '<div class="masthead"><span class="accent">01 \u2014 The problem</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-body">' +
-        '<div class="section-num">01</div>' +
-        '<h2>The problem</h2>' +
-        '<p class="body-text">' + escapeHTML((f.problemDetail || '').slice(0, 600) || 'No problem statement yet') + '</p>' +
-        '<div class="stat-rail">' +
-          (aud ? '<div><span class="k">Affected</span><span class="v">' + escapeHTML(aud.head) + '</span></div>' : '') +
-          '<div><span class="k">Current state</span><span class="v">' + escapeHTML(extractStat(f.problemDetail || '') || '\u2014') + '</span></div>' +
-          (f.businessCase && f.businessCase.baseline ? '<div><span class="k">Cost</span><span class="v">' + escapeHTML(f.businessCase.baseline) + '</span></div>' : '') +
-        '</div>' +
-      '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">02</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  // 3. 01 Problem
+  let probBody = '<div class="section-num">01</div><h2>The problem</h2>';
+  probBody += '<p class="body-text">' + escapeHTML((f.problemDetail || '').slice(0, 600) || 'No problem statement yet') + '</p>';
+  let probRail = '<div class="stat-rail">';
+  if (aud) probRail += '<div><span class="k">Affected</span><span class="v">' + escapeHTML(aud.head) + '</span></div>';
+  probRail += '<div><span class="k">Current state</span><span class="v">' + escapeHTML(extractStat(f.problemDetail || '') || '\u2014') + '</span></div>';
+  if (f.businessCase && f.businessCase.baseline) probRail += '<div><span class="k">Cost</span><span class="v">' + escapeHTML(f.businessCase.baseline) + '</span></div>';
+  probRail += '</div>';
+  probBody += probRail;
+  sections.push(makeSlide('Problem', '01 \u2014 The problem', probBody, 'This is the business case the budget conversation lives inside.'));
 
-  // 3. Root cause
-  sections.push(
-    '<section data-name="RootCause">' +
-      '<div class="masthead"><span class="accent">02 \u2014 Root cause</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-body">' +
-        '<div class="section-num">02</div>' +
-        '<h2>Root cause</h2>' +
-        '<p class="body-text">' + escapeHTML(f.rootCause || '') + '</p>' +
-        (f.evidenceForLearning ? '<p class="body-text sub"><em>Evidence: ' + escapeHTML(f.evidenceForLearning) + '</em></p>' : '') +
-      '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">03</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  // 4. 02 Root cause
+  let rcBody = '<div class="section-num">02</div><h2>Root cause</h2>';
+  rcBody += '<p class="body-text">' + escapeHTML(f.rootCause || '') + '</p>';
+  if (f.evidenceForLearning) rcBody += '<p class="body-text sub"><em>Evidence: ' + escapeHTML(f.evidenceForLearning) + '</em></p>';
+  if (f.rulesOut) rcBody += '<p class="body-text sub"><em>Ruled out: ' + escapeHTML(f.rulesOut) + '</em></p>';
+  sections.push(makeSlide('RootCause', '02 \u2014 Root cause', rcBody, 'Make clear: this is a system problem, not a will problem.'));
 
-  // 4. Approach
-  let apprInner = '<div class="section-num">03</div><h2>The approach</h2>';
+  // 5. 03 Approach
+  let apprBody = '<div class="section-num">03</div><h2>The approach</h2>';
   if (filledInterventions.length > 0) {
-    apprInner += '<div class="card-grid">';
+    apprBody += '<div class="card-grid">';
     filledInterventions.forEach((v, i) => {
       const isQuant = APPROACH_UNIT_LABELS[v.value];
       const hasAmt = v.amount !== undefined && v.amount !== '' && Number(v.amount) > 0;
       const sub = hasAmt && isQuant ? '<span class="amount">' + v.amount + '</span> <span class="unit">' + escapeHTML(APPROACH_UNIT_LABELS[v.value]) + '</span>' : (v.detail ? escapeHTML(v.detail) : '');
-      apprInner += '<div class="card"><div class="card-label">Component ' + String(i + 1).padStart(2, '0') + '</div><div class="card-name">' + escapeHTML(APPROACH_LABELS[v.value] || v.value) + '</div>' + (sub ? '<div class="card-detail">' + sub + '</div>' : '') + '</div>';
+      apprBody += '<div class="card"><div class="card-label">P' + (i + 1) + '</div><div class="card-name">' + escapeHTML(APPROACH_LABELS[v.value] || v.value) + '</div>' + (sub ? '<div class="card-detail">' + sub + '</div>' : '') + '</div>';
     });
-    apprInner += '</div>';
+    apprBody += '</div>';
   } else {
-    apprInner += '<p class="empty">No interventions selected</p>';
+    apprBody += '<p class="empty">No interventions selected</p>';
   }
-  if (f.approachRationale) apprInner += '<p class="rationale">' + escapeHTML(f.approachRationale) + '</p>';
-  sections.push(
-    '<section data-name="Approach">' +
-      '<div class="masthead"><span class="accent">03 \u2014 The approach</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-body">' + apprInner + '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">04</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  if (f.approachRationale) apprBody += '<p class="rationale">' + escapeHTML(f.approachRationale) + '</p>';
+  sections.push(makeSlide('Approach', '03 \u2014 The approach', apprBody, 'Three reinforcing parts, not a course. The system is the product.'));
 
-  // 5. Deliverables
-  let delInner = '<div class="section-num">04</div><h2>Deliverables</h2>';
+  // 6. 04 Deliverables
+  let delBody = '<div class="section-num">04</div><h2>Deliverables</h2>';
   if (filledDeliverables.length > 0) {
-    delInner += '<div class="card-grid">';
+    delBody += '<div class="card-grid">';
     filledDeliverables.forEach((d) => {
-      delInner += '<div class="card"><div class="card-label">' + escapeHTML(d.format || '\u2014') + '</div><div class="card-name">' + escapeHTML(d.name) + '</div>' + (d.owner ? '<div class="card-owner">Owner \u00b7 ' + escapeHTML(d.owner) + '</div>' : '') + '</div>';
+      delBody += '<div class="card"><div class="card-label">' + escapeHTML(d.format || '\u2014') + '</div><div class="card-name">' + escapeHTML(d.name) + '</div>' + (d.owner ? '<div class="card-owner">Owner \u00b7 ' + escapeHTML(d.owner) + '</div>' : '') + '</div>';
     });
-    delInner += '</div>';
+    delBody += '</div>';
   } else {
-    delInner += '<p class="empty">No deliverables added</p>';
+    delBody += '<p class="empty">No deliverables added</p>';
   }
-  sections.push(
-    '<section data-name="Deliverables">' +
-      '<div class="masthead"><span class="accent">04 \u2014 Deliverables</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-body">' + delInner + '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">05</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  sections.push(makeSlide('Deliverables', '04 \u2014 Deliverables', delBody, 'What the L&D team will actually ship.'));
 
-  // 6. Plan
-  let planInner = '<div class="section-num">05</div><h2>The plan</h2>';
+  // 7. 05 Plan
+  let planBody = '<div class="section-num">05</div><h2>The plan</h2>';
   if (filledPhases.length > 0) {
-    planInner += '<div class="phase-list">';
+    planBody += '<div class="phase-list">';
     filledPhases.forEach((p, i) => {
       const meta = [p.duration, p.owner, p.deliverable].filter(Boolean).map(escapeHTML).join(' \u00b7 ');
-      planInner += '<div class="phase-row"><span class="phase-tag">P' + (i + 1) + '</span><div class="phase-body"><div class="phase-name">' + escapeHTML(p.name) + '</div><div class="phase-meta">' + meta + '</div></div></div>';
+      planBody += '<div class="phase-row"><span class="phase-tag">PH ' + (i + 1) + '</span><div class="phase-body"><div class="phase-name">' + escapeHTML(p.name) + '</div><div class="phase-meta">' + meta + '</div></div></div>';
     });
-    planInner += '</div>';
+    planBody += '</div>';
   } else {
-    planInner += '<p class="empty">No phases added</p>';
+    planBody += '<p class="empty">No phases added</p>';
   }
-  sections.push(
-    '<section data-name="Plan">' +
-      '<div class="masthead"><span class="accent">05 \u2014 The plan</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-body">' + planInner + '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">06</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  sections.push(makeSlide('Plan', '05 \u2014 The plan', planBody, 'Phases with owners and dates. No status, no execution tracking.'));
 
-  // 7. Win
-  let winInner = '<div class="section-num">06</div><h2>The win</h2>';
+  // 8. 06 Win detail (metric card grid, mirrors one-pager)
+  let winDetailBody = '<div class="section-num">06</div><h2>What success looks like</h2>';
   if (filledMetrics.length > 0) {
-    const hero = extractStat(filledMetrics[0]) || filledMetrics[0].slice(0, 20);
-    winInner += '<div class="win-grid"><div class="win-hero"><div class="win-eyebrow">' + (framework ? escapeHTML(framework) : 'Target win') + '</div><div class="win-stat">' + escapeHTML(hero) + '</div></div><div class="win-metrics">';
-    filledMetrics.forEach((m) => { winInner += '<div>' + escapeHTML(m) + '</div>'; });
-    winInner += '</div></div>';
+    winDetailBody += '<div class="win-detail-cards">';
+    filledMetrics.slice(0, 4).forEach((m) => {
+      const t = parseWinTransition(m);
+      const labelText = t ? (t.label || winLabelForUnit(t.unit)) : (extractMetricLabel(m) || 'Metric');
+      winDetailBody += '<div class="win-detail-card"><div class="k">' + escapeHTML(labelText) + '</div><div class="v">';
+      if (t) {
+        winDetailBody += '<span class="from">' + escapeHTML(t.from) + ' ' + escapeHTML(t.unit) + '</span><span class="to">' + escapeHTML(t.to) + ' ' + escapeHTML(t.unit) + '</span>';
+        if (t.rest && t.rest.toLowerCase() !== (t.label || '').toLowerCase()) winDetailBody += ' ' + escapeHTML(t.rest);
+      } else {
+        winDetailBody += escapeHTML(m);
+      }
+      winDetailBody += '</div></div>';
+    });
+    winDetailBody += '</div>';
   } else {
-    winInner += '<p class="empty">No success metrics defined</p>';
+    winDetailBody += '<p class="empty">No success metrics defined</p>';
   }
-  sections.push(
-    '<section data-name="Win">' +
-      '<div class="masthead"><span class="accent">06 \u2014 The win</span><span>' + updatedLabel + '</span></div>' +
-      '<div class="slide-body">' + winInner + '</div>' +
-      '<div class="slide-footer"><span>Cadence</span><span class="num">07</span> / <span class="total">10</span></div>' +
-    '</section>'
-  );
+  sections.push(makeSlide('Win', '06 \u2014 The win', winDetailBody, 'The metrics. 30/60/90 days and one quarter out.'));
 
-  // 8. Open questions
+  // 9. 07 Open questions
   if (filledOQ.length > 0) {
-    let oqInner = '<div class="section-num">07</div><h2>Open questions</h2><div class="eyebrow-sm">' + filledOQ.length + ' tracked</div>';
-    oqInner += '<div class="q-list">';
+    let oqBody = '<div class="section-num">07</div><h2>What\u2019s still uncertain</h2><div class="eyebrow-sm">' + filledOQ.length + ' tracked</div>';
+    oqBody += '<div class="q-list">';
     filledOQ.forEach((q) => {
-      oqInner += '<div class="q-row"><span class="q-dot ' + (q.status || 'open') + '"></span><div class="q-body"><div class="q-text">' + escapeHTML(q.question) + '</div><div class="q-meta">' + (q.owner ? 'Owner: ' + escapeHTML(q.owner) : '') + (q.dueDate ? ' \u00b7 Due ' + escapeHTML(q.dueDate) : '') + '</div></div></div>';
+      oqBody += '<div class="q-row"><span class="q-dot ' + (q.status || 'open') + '"></span><div class="q-body"><div class="q-text">' + escapeHTML(q.question) + '</div><div class="q-meta">' + (q.owner ? 'Owner: ' + escapeHTML(q.owner) : '') + (q.dueDate ? ' \u00b7 Due ' + escapeHTML(q.dueDate) : '') + '</div></div></div>';
     });
-    oqInner += '</div>';
-    sections.push(
-      '<section data-name="OpenQuestions">' +
-        '<div class="masthead"><span class="accent">07 \u2014 Open questions</span><span>' + updatedLabel + '</span></div>' +
-        '<div class="slide-body">' + oqInner + '</div>' +
-        '<div class="slide-footer"><span>Cadence</span><span class="num">08</span> / <span class="total">10</span></div>' +
-      '</section>'
-    );
+    oqBody += '</div>';
+    sections.push(makeSlide('OpenQuestions', '07 \u2014 Open questions', oqBody, 'What\u2019s still uncertain. None of these gate the go-decision.'));
   }
 
-  // 9. Out of scope (was 10, renumbered to 09 after dropping check-ins)
+  // 10. 08 Out of scope
   if (filledOOS.length > 0) {
-    let oosInner = '<div class="section-num">08</div><h2>Out of scope</h2><div class="eyebrow-sm">' + filledOOS.length + ' decided</div>';
-    oosInner += '<div class="oos-list">';
+    let oosBody = '<div class="section-num">08</div><h2>What we decided against</h2><div class="eyebrow-sm">' + filledOOS.length + ' decided</div>';
+    oosBody += '<div class="oos-list">';
     filledOOS.forEach((it) => {
-      oosInner += '<div class="oos-row"><span class="oos-minus">\u2212</span><div class="oos-body"><div class="oos-name">' + escapeHTML(it.item) + '</div>' + (it.reason ? '<div class="oos-reason">' + escapeHTML(it.reason) + '</div>' : '') + '</div></div>';
+      oosBody += '<div class="oos-row"><span class="oos-minus">\u2212</span><div class="oos-body"><div class="oos-name">' + escapeHTML(it.item) + '</div>' + (it.reason ? '<div class="oos-reason">' + escapeHTML(it.reason) + '</div>' : '') + '</div></div>';
     });
-    oosInner += '</div>';
-    sections.push(
-      '<section data-name="OutOfScope">' +
-        '<div class="masthead"><span class="accent">08 \u2014 Out of scope</span><span>' + updatedLabel + '</span></div>' +
-        '<div class="slide-body">' + oosInner + '</div>' +
-        '<div class="slide-footer"><span>Cadence</span><span class="num">10</span> / <span class="total">10</span></div>' +
-      '</section>'
-    );
+    oosBody += '</div>';
+    sections.push(makeSlide('OutOfScope', '08 \u2014 Out of scope', oosBody, 'What we decided against. Documented so they don\u2019t get re-litigated.'));
   }
 
-  // If no OQ/CI/OOS, the last section should still be the Win slide with updated total
-  // The total is hardcoded to 10 above — adjust based on actual slide count
-  const actualTotal = sections.length;
-  // Update all total labels
-  const sectionsWithCorrectTotal = sections.map((s) => s.replace(/<span class="total">10<\/span>/g, '<span class="total">' + actualTotal + '</span>').replace(/<span class="num">(\d+)<\/span> \/ <span class="total">10<\/span>/g, function(m, num) { return '<span class="num">' + num + '</span> / <span class="total">' + actualTotal + '</span>'; }));
+  // Post-process: replace __NUM__ and __TOTAL__ placeholders with actual sequential numbers
+  const total = sections.length;
+  const sectionsWithNumbers = sections.map((s, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    const tot = String(total).padStart(2, '0');
+    return s.replace(/<span class="num">__NUM__<\/span>/g, '<span class="num">' + num + '</span>')
+            .replace(/<span class="total">__TOTAL__<\/span>/g, '<span class="total">' + tot + '</span>');
+  });
 
   return [
     '<!DOCTYPE html>',
@@ -5712,11 +5750,18 @@ const renderStandaloneSlides = (project, template) => {
     '<!--',
     '  Cadence slide deck export \u2014 reveal.js + custom Cadence theme',
     '  ',
+    '  STRUCTURE (10 slides):',
+    '  1. Cover (title + 3-stat strip: Reach / Duration / Effort)',
+    '  2. Win hero (big from \u2192 to unit punchline + 3 detail cards)',
+    '  3-10. Numbered sections 01-08: Problem, Root cause, Approach,',
+    '       Deliverables, Plan, Win, Open questions, Out of scope',
+    '  ',
     '  HOW TO EDIT:',
     '  \u2022 Each slide is a <section> block with custom classes (.masthead, .slide-body, .slide-footer)',
     '  \u2022 Edit the text inside .slide-body \u2014 the structure stays the same',
     '  \u2022 To add a slide: copy any <section> block, change data-name, paste before the closing </div> of .slides',
     '  \u2022 To reorder: move <section> blocks up or down',
+    '  \u2022 Speaker notes live in <aside class="notes"> \u2014 invisible in normal view, shown in speaker view (S)',
     '  \u2022 Reveal.js keyboard: arrows to navigate, Esc for overview, F for fullscreen, S for speaker notes',
     '  ',
     '  FOR OFFLINE USE:',
@@ -5745,14 +5790,14 @@ const renderStandaloneSlides = (project, template) => {
     /* Slide body wrapper */
     '.reveal .slide-body { flex: 1; max-width: 1100px; min-height: 0; overflow: hidden; }',
     /* Title slide body needs full width for centering */
-    '.reveal section[data-name="Title"] .slide-title-body { width: 100%; max-width: none; }',
+    '.reveal section[data-name="Title"] .slide-title-body, .reveal section[data-name="Cover"] .slide-title-body { width: 100%; max-width: none; }',
     /* Title slide */
     '.reveal .slide-title-body { margin: auto 0; text-align: center; }',
     '.reveal .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 0.45em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 18px; }',
     '.reveal .title-rule { width: 60px; height: 1px; background: var(--accent); margin: 18px auto; }',
     '.reveal .title-meta { font-size: 0.75em; color: var(--text-dim); max-width: 700px; margin: 0 auto; }',
-    /* Section number badge */
-    '.reveal .section-num { display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 0.4em; font-weight: 500; color: var(--accent); padding: 4px 8px; background: color-mix(in oklch, var(--accent), transparent 94%); border: 1px solid color-mix(in oklch, var(--accent), transparent 70%); border-radius: 3px; letter-spacing: 0.1em; margin-bottom: 10px; }',
+    /* Section number badge (filled accent, matches one-pager) */
+    '.reveal .section-num { display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 0.4em; font-weight: 600; color: var(--bg); padding: 5px 9px; background: var(--accent); border: none; border-radius: 2px; letter-spacing: 0.1em; margin-bottom: 14px; }',
     /* Body text */
     '.reveal .body-text { font-size: 0.7em; color: var(--text); line-height: 1.6; max-width: 1000px; margin: 0 0 16px; }',
     '.reveal .body-text.sub { color: var(--text-dim); font-style: italic; }',
@@ -5778,7 +5823,33 @@ const renderStandaloneSlides = (project, template) => {
     '.reveal .phase-tag { font-family: "JetBrains Mono", monospace; font-size: 0.55em; color: var(--accent); font-weight: 500; padding-top: 2px; }',
     '.reveal .phase-name { font-size: 0.7em; color: var(--text-bright); font-weight: 500; margin-bottom: 3px; }',
     '.reveal .phase-meta { font-family: "JetBrains Mono", monospace; font-size: 0.42em; color: var(--text-faint); }',
-    /* Win slide */
+    /* Cover: 3-stat strip (Reach / Duration / Effort) */
+    '.reveal .cover-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; max-width: 1000px; margin: 36px auto 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }',
+    '.reveal .cover-stat { padding: 22px 24px; }',
+    '.reveal .cover-stat + .cover-stat { border-left: 1px solid var(--border); }',
+    '.reveal .cover-stat .lbl { font-family: "JetBrains Mono", monospace; font-size: 0.4em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px; }',
+    '.reveal .cover-stat .num { font-weight: 800; font-size: 2em; color: var(--text-bright); line-height: 1; letter-spacing: -0.03em; margin-bottom: 8px; }',
+    '.reveal .cover-stat .num .a { color: var(--accent); }',
+    '.reveal .cover-stat .sub { font-size: 0.5em; line-height: 1.45; color: var(--text-dim); }',
+    '.reveal .cover-investment { font-size: 0.5em; color: var(--text-faint); text-align: center; margin-top: 14px; font-style: italic; }',
+    '.reveal .cover-investment b { font-style: normal; color: var(--text-dim); font-weight: 600; }',
+    /* Win hero (slide 2) — big from → to unit punchline */
+    '.reveal .win-hero-label { font-family: "JetBrains Mono", monospace; font-size: 0.5em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }',
+    '.reveal .win-hero-label::before { content: ""; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }',
+    '.reveal .win-hero-block { display: flex; align-items: baseline; gap: 28px; flex-wrap: wrap; margin-top: 8px; }',
+    '.reveal .win-hero-block .from { font-size: 2.6em; font-weight: 700; color: var(--text-faint); text-decoration: line-through; text-decoration-thickness: 3px; line-height: 1; letter-spacing: -0.03em; }',
+    '.reveal .win-hero-block .arrow { font-size: 2.2em; color: var(--accent); font-weight: 800; line-height: 1; }',
+    '.reveal .win-hero-block .to { font-size: 4.5em; font-weight: 800; color: var(--accent); line-height: 1; letter-spacing: -0.045em; }',
+    '.reveal .win-hero-block .unit { font-size: 1.8em; font-weight: 600; color: var(--text-bright); line-height: 1; }',
+    '.reveal .win-hero-lede { font-size: 1.4em; line-height: 1.45; color: var(--text-bright); font-weight: 500; border-left: 3px solid var(--accent); padding: 8px 0 8px 22px; margin-top: 16px; }',
+    /* Win detail cards (2x2 grid for the 06 win section) */
+    '.reveal .win-detail-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 20px; }',
+    '.reveal .win-detail-card { padding: 18px 20px; background: var(--bg-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); }',
+    '.reveal .win-detail-card .k { font-weight: 700; font-size: 0.8em; color: var(--text-bright); margin-bottom: 8px; letter-spacing: -0.01em; }',
+    '.reveal .win-detail-card .v { font-size: 0.7em; line-height: 1.5; color: var(--text-dim); }',
+    '.reveal .win-detail-card .v .from { color: var(--text-faint); text-decoration: line-through; margin-right: 8px; }',
+    '.reveal .win-detail-card .v .to { color: var(--accent); font-weight: 700; margin-right: 8px; }',
+    /* Win slide (legacy, kept for backwards compat) */
     '.reveal .win-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 16px; }',
     '.reveal .win-hero { text-align: left; }',
     '.reveal .win-eyebrow { font-family: "JetBrains Mono", monospace; font-size: 0.4em; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }',
@@ -5786,18 +5857,16 @@ const renderStandaloneSlides = (project, template) => {
     '.reveal .win-metrics { display: flex; flex-direction: column; gap: 8px; }',
     '.reveal .win-metrics > div { font-size: 0.7em; color: var(--text); padding: 6px 0; border-top: 1px solid var(--border); }',
     '.reveal .win-metrics > div:first-child { border-top: none; }',
-    /* Open questions / check-ins */
+    /* Open questions */
     '.reveal .eyebrow-sm { font-family: "JetBrains Mono", monospace; font-size: 0.4em; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }',
     '.reveal .q-list { display: flex; flex-direction: column; gap: 4px; }',
     '.reveal .q-row { display: grid; grid-template-columns: 16px 1fr; gap: 14px; padding: 8px 0; align-items: start; }',
     '.reveal .q-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }',
     '.reveal .q-dot.open { background: var(--warn); }',
-    '.reveal .q-dot.answered, .reveal .q-dot.on-track { background: var(--ok); }',
-    '.reveal .q-dot.blocked, .reveal .q-dot.at-risk { background: #ED7D31; }',
+    '.reveal .q-dot.answered { background: var(--ok); }',
+    '.reveal .q-dot.blocked { background: #ED7D31; }',
     '.reveal .q-text { font-size: 0.7em; color: var(--text-bright); margin-bottom: 2px; }',
     '.reveal .q-meta { font-family: "JetBrains Mono", monospace; font-size: 0.4em; color: var(--text-dim); }',
-    '.reveal .ci-date { color: var(--text); }',
-    '.reveal .ci-status { font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }',
     /* Out of scope */
     '.reveal .oos-list { display: flex; flex-direction: column; gap: 6px; }',
     '.reveal .oos-row { display: grid; grid-template-columns: 24px 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border); align-items: start; }',
@@ -5822,7 +5891,7 @@ const renderStandaloneSlides = (project, template) => {
     '<body>',
     '<div class="reveal">',
     '<div class="slides">',
-    sectionsWithCorrectTotal.join('\n'),
+    sectionsWithNumbers.join('\n'),
     '</div>',
     '</div>',
     '<script src="https://unpkg.com/reveal.js@4.5.0/dist/reveal.js"><' + '/script>',
