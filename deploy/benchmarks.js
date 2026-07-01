@@ -22,14 +22,14 @@ const BENCHMARKS = [
   { id: 'cohort',      deliverable: 'Cohort-based program',        unit: '1 hr instruction',    unitPlural: 'hrs of instruction', hoursPerUnit: 60,   group: 'Live', aliases: [] },
 
   // Self-paced
-  { id: 'elearn-std',  deliverable: 'eLearning (standard)',        unit: '1 hr instruction',    unitPlural: 'hrs of content',      hoursPerUnit: 48.5, group: 'Self-paced', aliases: ['elearn'] },
-  { id: 'elearn-hi',   deliverable: 'eLearning (high interactivity)', unit: '1 hr instruction', unitPlural: 'hrs of content',      hoursPerUnit: 120,  group: 'Self-paced', aliases: [] },
+  { id: 'elearn-std',  deliverable: 'eLearning: standard (linear content)',     unit: '1 hr instruction',    unitPlural: 'hrs of content',      hoursPerUnit: 48.5, group: 'Self-paced', aliases: ['elearn-std', 'elearn'] },
+  { id: 'elearn-hi',   deliverable: 'eLearning: high interactivity (simulations, branching)', unit: '1 hr instruction', unitPlural: 'hrs of content',      hoursPerUnit: 120,  group: 'Self-paced', aliases: ['elearn-hi'] },
   { id: 'micro',       deliverable: 'Microlearning module',        unit: '1 module (~5 min)',    unitPlural: 'modules',             hoursPerUnit: 20,   group: 'Self-paced', aliases: ['micro'] },
 
   // Video & media
-  { id: 'video-sim',   deliverable: 'Video (simple)',              unit: '1 min finished',      unitPlural: 'min of finished video', hoursPerUnit: 1,   group: 'Video & media', aliases: [] },
-  { id: 'video-mod',   deliverable: 'Video (moderate)',            unit: '1 min finished',      unitPlural: 'min of finished video', hoursPerUnit: 3,   group: 'Video & media', aliases: ['video'] },
-  { id: 'video-cplx',  deliverable: 'Video (complex)',             unit: '1 min finished',      unitPlural: 'min of finished video', hoursPerUnit: 6,   group: 'Video & media', aliases: [] },
+  { id: 'video-sim',   deliverable: 'Video: talking head (record + light edit)',     unit: '1 min finished',      unitPlural: 'min of finished video', hoursPerUnit: 1,   group: 'Video & media', aliases: ['video-sim'] },
+  { id: 'video-mod',   deliverable: 'Video: with graphics (record + graphics + edit)', unit: '1 min finished',      unitPlural: 'min of finished video', hoursPerUnit: 3,   group: 'Video & media', aliases: ['video-mod', 'video'] },
+  { id: 'video-cplx',  deliverable: 'Video: explainer (script + storyboard + motion + edit)', unit: '1 min finished',      unitPlural: 'min of finished video', hoursPerUnit: 6,   group: 'Video & media', aliases: ['video-cplx'] },
 
   // Documents & aids
   { id: 'one-pager',   deliverable: 'One-pager / quick reference', unit: '1 page',              unitPlural: 'pages',               hoursPerUnit: 4,    group: 'Documents & aids', aliases: ['one-pager'] },

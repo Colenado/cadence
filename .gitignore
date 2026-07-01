@@ -30,6 +30,10 @@ _seed/
 # Per-slide test screenshots and exports from playwright runs are not.
 screenshots/slide-*.png
 screenshots/exports/
+screenshots/mobile-*.png
+screenshots/wizard-*.png
+screenshots/after-*.png
+screenshots/export-*.png
 
 # Dev roadmap (kept in repo as a working doc, excluded from releases)
 PROPOSED_CHANGES.md

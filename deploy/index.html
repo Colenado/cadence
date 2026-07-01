@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1224,15 +1224,6 @@
   .field-textarea { min-height: 90px; resize: vertical; line-height: 1.55; font-family: var(--sans); }
   .field-select { appearance: none; cursor: pointer; }
 
-  /* T3.3 — highlighted field (needs fix from validate) */
-  .field-highlight { padding: 12px 14px; border: 1px solid #ff7a7a; border-left: 3px solid #ff7a7a; border-radius: 5px; background: rgba(255,122,122,0.04); animation: hl-pulse 1.6s var(--ease) 1; }
-  .field-highlight .field-label { color: #ff7a7a; font-weight: 500; }
-  .field-highlight .field-input,
-  .field-highlight .field-textarea,
-  .field-highlight .field-select { border-color: rgba(255,122,122,0.30); }
-  .field-highlight-tag { font-family: var(--mono); font-size: 9px; color: #ff7a7a; background: rgba(255,122,122,0.10); border: 1px solid rgba(255,122,122,0.30); border-radius: 3px; padding: 1px 6px; margin-left: auto; letter-spacing: 0.08em; text-transform: uppercase; }
-  @keyframes hl-pulse { 0%, 100% { background: rgba(255,122,122,0.04); } 50% { background: rgba(255,122,122,0.12); } }
-
   /* Multiselect */
   .multiselect { display: flex; flex-direction: column; gap: 5px; }
   .ms-opt {
@@ -1302,6 +1293,20 @@
     padding: 2px 8px; background: var(--bg-1); border: 1px solid var(--border);
     border-radius: 3px;
   }
+  .ms-tier-row {
+    display: flex; align-items: center; gap: 10px; margin-top: 8px;
+  }
+  .ms-tier-label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-faint);
+  }
+  .ms-tier-select {
+    flex: 1; appearance: none; cursor: pointer;
+    background: var(--bg-1); border: 1px solid var(--border); border-radius: 3px;
+    padding: 6px 10px; color: var(--text-bright);
+    font-size: 13px; font-family: var(--sans);
+  }
+  .ms-tier-select:focus { border-color: var(--accent); outline: none; }
   .ms-legacy-detail { font-family: var(--mono); font-size: 10px; color: var(--text-faint); margin-top: 6px; }
   .ms-legacy-detail em { color: var(--text-dim); font-style: normal; }
   .ms-legacy-btn {
@@ -1823,12 +1828,11 @@
   /* Deliverables */
   .kin-deliverables { display: grid; gap: 0; border-top: 1px solid var(--border); }
   .kin-deliverable {
-    display: grid; grid-template-columns: 60px 1fr 200px 180px; gap: 24px; align-items: center;
+    display: grid; grid-template-columns: 60px 1fr 180px; gap: 24px; align-items: center;
     padding: 22px 0; border-bottom: 1px solid var(--border);
   }
   .kin-deliverable .ix { font-family: var(--mono); font-weight: 600; font-size: 14px; color: var(--accent); }
   .kin-deliverable .name { font-weight: 700; font-size: 18px; color: var(--text-bright); letter-spacing: -0.01em; }
-  .kin-deliverable .format { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
   .kin-deliverable .owner { font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-align: right; text-transform: uppercase; letter-spacing: 0.1em; }
 
   /* Phases (no status pills, no RACI, no tasks) */
@@ -1931,11 +1935,29 @@
     .kin-win-detail, .kin-approach, .kin-win-metrics { grid-template-columns: 1fr; }
     .kin-twoup { grid-template-columns: 1fr; }
     .kin-deliverable, .kin-phase { grid-template-columns: 60px 1fr; }
-    .kin-deliverable .format, .kin-deliverable .owner,
-    .kin-phase .dates, .kin-phase .owner { grid-column: 2; text-align: left; }
+    .kin-deliverable .owner, .kin-phase .dates, .kin-phase .owner { grid-column: 2; text-align: left; }
     .kin-oq .row, .kin-oos .row { grid-template-columns: 1fr; }
     .kin-oq .pill, .kin-oos .decider { justify-self: start; text-align: left; }
     .kin-oos .decider .k { text-align: left; }
+    .build-progress { flex-wrap: wrap; }
+    .step { font-size: 11px; padding: 3px 7px 3px 4px; }
+    .step-line { min-width: 8px; }
+    .build-body { padding: 24px 16px 80px; }
+    .build-step-prompt { font-size: 14px; }
+    .est-header { flex-wrap: wrap; gap: 8px; padding: 16px; }
+    .est-grid { padding: 0 16px 16px; }
+    .est-total { padding: 20px 16px; }
+  }
+  @media (max-width: 600px) {
+    .kin-h1 { font-size: 32px; }
+    .kin-win-big { flex-direction: row; flex-wrap: wrap; gap: 12px; }
+    .kin-win-big .to { font-size: 64px; }
+    .kin-win-big .from { font-size: 44px; }
+    .kin-win-big .unit { font-size: 24px; }
+    .kin-win-big .arrow { font-size: 28px; }
+    .kin-cover-stats { grid-template-columns: 1fr; }
+    .kin-cover-stats .cover-stat + .cover-stat { border-left: none; border-top: 1px solid var(--border); }
+    .cover-investment { font-size: 12px; }
   }
 </style>
 </head>
@@ -2546,7 +2568,7 @@ const App = () => {
               projects={projects}
               onNew={() => setRoute({ name: 'new' })}
               onOpen={(id) => setRoute({ name: 'plan', id })}
-              onEdit={(id, gapsToFix) => setRoute({ name: 'build-existing', projectId: id, gapsToFix })}
+              onEdit={(id) => setRoute({ name: 'build-existing', projectId: id })}
               onImport={() => setRoute({ name: 'import' })}
               onLoadSample={async () => {
                 const s = buildSampleProject();
@@ -2581,7 +2603,7 @@ const App = () => {
               projectId={route.id}
               preloadedProject={projects.find((p) => p.id === route.id)}
               onBack={() => { refresh(); setRoute({ name: 'dashboard' }); }}
-              onEdit={(id, gapsToFix) => setRoute({ name: 'build-existing', projectId: id, gapsToFix })}
+              onEdit={(id) => setRoute({ name: 'build-existing', projectId: id })}
               onOpenScope={() => setRoute({ name: 'scope', projectId: route.id, from: { name: 'plan', id: route.id } })}
               markSaving={markSaving}
               markSaved={markSaved}
@@ -2597,7 +2619,6 @@ const App = () => {
               markSaving={markSaving}
               markSaved={markSaved}
               onOpenScope={() => setRoute({ name: 'scope', projectId: route.projectId, from: { name: 'build-existing', projectId: route.projectId } })}
-              gapsToFix={route.gapsToFix}
             />
           )}
           {route.name === 'import' && (
@@ -3081,29 +3102,10 @@ const ImportFlow = ({ onCancel, onDone }) => {
 // Build flow (wizard — 6 steps + bottom command bar)
 // ============================================================
 
-const BuildFlow = ({ templateId, projectId, preloadedProject, existing, onCancel, onSaved, markSaving, markSaved, onOpenScope, gapsToFix }) => {
+const BuildFlow = ({ templateId, projectId, preloadedProject, existing, onCancel, onSaved, markSaving, markSaved, onOpenScope }) => {
   const [project, setProject] = useState(preloadedProject || null);
   const [stepIdx, setStepIdx] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false); // Pattern B — resets on reload
-
-  // T3.3: if gapsToFix is provided, jump to the first step that has a gap
-  // and expand Advanced if the gap is in an advanced field.
-  useEffect(() => {
-    if (!gapsToFix || gapsToFix.length === 0) return;
-    const tplId = templateId || (project && project.templateId);
-    if (!tplId) return;
-    const tpl = (window.TEMPLATES || {})[tplId];
-    if (!tpl) return;
-    for (let s = 0; s < tpl.steps.length; s++) {
-      const step = tpl.steps[s];
-      const allFields = [...(step.fields || []), ...(step.advanced || [])];
-      if (allFields.some((f) => gapsToFix.includes(f.id))) {
-        setStepIdx(s);
-        if ((step.advanced || []).some((f) => gapsToFix.includes(f.id))) setShowAdvanced(true);
-        return;
-      }
-    }
-  }, [gapsToFix, templateId, project]);
 
   useEffect(() => {
     if (preloadedProject) { setProject(preloadedProject); return; }
@@ -3201,7 +3203,6 @@ const BuildFlow = ({ templateId, projectId, preloadedProject, existing, onCancel
             field={f}
             value={project.fields[f.id]}
             onChange={(v) => updateField(f.id, v)}
-            highlight={gapsToFix && gapsToFix.includes(f.id)}
           />
         ))}
 
@@ -3215,7 +3216,6 @@ const BuildFlow = ({ templateId, projectId, preloadedProject, existing, onCancel
                   field={f}
                   value={project.fields[f.id]}
                   onChange={(v) => updateField(f.id, v)}
-                  highlight={gapsToFix && gapsToFix.includes(f.id)}
                 />
               ))}
               <p className="advanced-note">Phase approver, supporters, and dependencies live with each phase in step 5.</p>
@@ -3260,19 +3260,18 @@ const StatusPill = ({ status, onCycle }) => {
 // stakeholders / businessCase
 // ============================================================
 
-const FieldRenderer = ({ field, value, onChange, highlight }) => {
-  const hl = highlight ? ' field-highlight' : '';
+const FieldRenderer = ({ field, value, onChange }) => {
   if (field.type === 'text') {
     return (
-      <div className={'field' + hl}>
-        <label className="field-label">{field.label}{highlight && <span className="field-highlight-tag">needs fix</span>}</label>
+      <div className="field">
+        <label className="field-label">{field.label}</label>
         <input className="field-input" type="text" value={value || ''} placeholder={field.placeholder || ''} onChange={(e) => onChange(e.target.value)} />
       </div>
     );
   }
   if (field.type === 'textarea') {
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}</label>
         <textarea className="field-textarea" value={value || ''} placeholder={field.placeholder || ''} onChange={(e) => onChange(e.target.value)} />
       </div>
@@ -3280,7 +3279,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
   }
   if (field.type === 'select') {
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}</label>
         <select className="field-input field-select" value={value || ''} onChange={(e) => onChange(e.target.value)}>
           {field.options.map((opt) => (
@@ -3293,7 +3292,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
   if (field.type === 'multiselect') {
     const selected = value || [];
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}<span className="hint">select one or more</span></label>
         <div className="multiselect">
           {field.options.map((opt) => {
@@ -3301,14 +3300,18 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
             const selectedObj = selected.find((v) => (v && v.value) === opt.value);
             const detail = selectedObj ? (selectedObj.detail || '') : '';
             const amount  = selectedObj ? (selectedObj.amount !== undefined ? selectedObj.amount : '') : '';
+            const tier    = selectedObj ? (selectedObj.tier || (opt.tiers ? opt.tiers[0].value : '')) : '';
             const isQuant = opt.quantitative === true;
+            const tierBenchmarkId = tier ? (opt.value + '-' + tier) : opt.value;
             return (
               <Fragment key={opt.value}>
                 <div
                   className={`ms-opt ${isSel ? 'selected' : ''}`}
                   onClick={() => {
                     if (isSel) onChange(selected.filter((v) => ((v && v.value) || v) !== opt.value));
-                    else onChange([...selected, isQuant ? { value: opt.value, amount: '' } : { value: opt.value, detail: '' }]);
+                    else onChange([...selected, isQuant
+                      ? { value: opt.value, amount: '', tier: opt.tiers ? opt.tiers[0].value : undefined }
+                      : { value: opt.value, detail: '' }]);
                   }}
                 >
                   <div className="ms-check"></div>
@@ -3339,10 +3342,32 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
                               onChange(next);
                             }}
                           />
-                          {amount !== '' && amount > 0 && (
-                            <span className="ms-num-hint">→ scope estimator: {Math.round((window.BENCHMARKS || []).find((b) => b.id === opt.value || b.aliases?.includes(opt.value))?.hoursPerUnit * Number(amount) || 0)} hrs</span>
-                          )}
+                          {amount !== '' && amount > 0 && (() => {
+                            const bm = tier
+                              ? (window.BENCHMARKS || []).find((b) => b.id === tierBenchmarkId)
+                              : (window.BENCHMARKS || []).find((b) => b.id === opt.value || (b.aliases || []).includes(opt.value));
+                            return (
+                              <span className="ms-num-hint">→ scope estimator: {Math.round((bm ? bm.hoursPerUnit * Number(amount) : 0) || 0)} hrs</span>
+                            );
+                          })()}
                         </div>
+                        {opt.tiers && opt.tiers.length > 0 && (
+                          <div className="ms-tier-row">
+                            <span className="ms-tier-label">Tier</span>
+                            <select
+                              className="ms-tier-select"
+                              value={tier}
+                              onChange={(e) => {
+                                const next = selected.map((v) => (v && v.value) === opt.value
+                                  ? { ...v, tier: e.target.value }
+                                  : v);
+                                onChange(next);
+                              }}
+                            >
+                              {opt.tiers.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                            </select>
+                          </div>
+                        )}
                         {detail && (
                           <div className="ms-legacy-detail">legacy detail: <em>{detail}</em> <button className="ms-legacy-btn" onClick={() => {
                             const num = parseFloat(detail);
@@ -3385,7 +3410,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
     const add = () => onChange([...list, { question: '', owner: '', dueDate: '', status: 'open', answer: '', source: '' }]);
     const remove = (i) => onChange(list.filter((_, j) => j !== i));
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}<span className="hint">track unknowns until they have an answer</span></label>
         <div className="oq-field">
           {list.map((q, i) => (
@@ -3427,7 +3452,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
   if (field.type === 'list') {
     const list = value || [];
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}</label>
         <div className="list-field">
           {list.map((item, i) => (
@@ -3446,7 +3471,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
   if (field.type === 'phases') {
     const phases = value || [];
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}</label>
         <div className="phases-field">
           {phases.map((p, i) => (
@@ -3466,7 +3491,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
   if (field.type === 'deliverables') {
     const delivs = value || [];
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}<span className="hint">what artifacts the L&amp;D team will ship</span></label>
         <div className="deliverables-field">
           {delivs.map((d, i) => (
@@ -3476,12 +3501,6 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
                   <span className="small-label">Name</span>
                   <input className="field-input" value={d.name || ''} placeholder="e.g., 30-Day Skills Curriculum" onChange={(e) => {
                     const next = [...delivs]; next[i] = { ...d, name: e.target.value }; onChange(next);
-                  }} />
-                </div>
-                <div className="deliv-row-field">
-                  <span className="small-label">Format</span>
-                  <input className="field-input" value={d.format || ''} placeholder="e.g., ILT · 4 × 90 min" onChange={(e) => {
-                    const next = [...delivs]; next[i] = { ...d, format: e.target.value }; onChange(next);
                   }} />
                 </div>
                 <div className="deliv-row-field">
@@ -3507,8 +3526,8 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
       onChange(next);
     };
     return (
-      <div className={'field' + hl}>
-        <label className="field-label">{field.label}{highlight && <span className="field-highlight-tag">needs fix</span>}</label>
+      <div className="field">
+        <label className="field-label">{field.label}</label>
         <div className="stk-list">
           {list.map((s, i) => (
             <div key={i} className="stk-row">
@@ -3547,7 +3566,7 @@ const FieldRenderer = ({ field, value, onChange, highlight }) => {
     const removeRow = (i) => set('baselineBreakdown', breakdown.filter((_, j) => j !== i));
     const total = breakdown.reduce((s, r) => s + (Number(r.amount) || 0), 0);
     return (
-      <div className={"field" + hl}>
+      <div className="field">
         <label className="field-label">{field.label}</label>
         <div className="bc-grid">
           <div className="bc-cell">
@@ -4173,7 +4192,6 @@ const PlanView = ({ projectId, preloadedProject, onBack, onEdit, onOpenScope, ma
                 <div className="kin-deliverable" key={i}>
                   <div className="ix">D{i + 1}</div>
                   <div className="name">{d.name}</div>
-                  <div className="format">{d.format || '—'}</div>
                   <div className="owner">{d.owner ? `Owner · ${d.owner}` : ''}</div>
                 </div>
               ))}
@@ -4420,7 +4438,8 @@ const Scope = ({ project, onSave, onCancel, onRefresh }) => {
       .map((v) => typeof v === 'string' ? { value: v, detail: '' } : v)
       .filter((v) => v && v.value && v.amount !== undefined && v.amount !== '' && Number(v.amount) > 0);
     return ints.map((v) => {
-      const bm = benchmarks.find((b) => b.id === v.value || (b.aliases || []).includes(v.value));
+      const targetId = v.tier ? `${v.value}-${v.tier}` : v.value;
+      const bm = benchmarks.find((b) => b.id === targetId || b.id === v.value || (b.aliases || []).includes(v.value));
       if (!bm) return null;
       const n = Number(v.amount);
       const hrs = +(bm.hoursPerUnit * n).toFixed(1);
@@ -4906,10 +4925,9 @@ const renderStandaloneHTML = (project, template) => {
   .rationale { margin-top: 20px; padding: 16px 20px; background: var(--bg-1); border-left: 3px solid var(--accent); font-size: 14px; color: var(--text-dim); line-height: 1.6; font-style: italic; }
 
   .deliverables { display: grid; gap: 0; border-top: 1px solid var(--border); }
-  .deliverable { display: grid; grid-template-columns: 60px 1fr 200px 180px; gap: 24px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--border); }
+  .deliverable { display: grid; grid-template-columns: 60px 1fr 180px; gap: 24px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--border); }
   .deliverable .ix { font-family: var(--mono); font-weight: 600; font-size: 14px; color: var(--accent); }
   .deliverable .name { font-weight: 700; font-size: 18px; color: var(--text-bright); letter-spacing: -0.01em; }
-  .deliverable .format { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
   .deliverable .owner { font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-align: right; text-transform: uppercase; letter-spacing: 0.1em; }
 
   .phases { display: grid; gap: 0; border-top: 1px solid var(--border); }
@@ -4965,7 +4983,7 @@ const renderStandaloneHTML = (project, template) => {
     .win .detail, .approach, .win-metrics { grid-template-columns: 1fr; }
     .twoup { grid-template-columns: 1fr; }
     .deliverable, .phase { grid-template-columns: 60px 1fr; }
-    .deliverable .format, .deliverable .owner, .phase .dates, .phase .owner { grid-column: 2; text-align: left; }
+    .deliverable .owner, .phase .dates, .phase .owner { grid-column: 2; text-align: left; }
     .oq .row, .oos .row { grid-template-columns: 1fr; }
   }
 </style>
@@ -5088,7 +5106,7 @@ const renderStandaloneHTML = (project, template) => {
       <h2>What we’re shipping.</h2>
       <div class="dek">${filledDeliverables.length} artifact${filledDeliverables.length === 1 ? '' : 's'} · ${new Set(filledDeliverables.map((d) => d.owner).filter(Boolean)).size} owner${new Set(filledDeliverables.map((d) => d.owner).filter(Boolean)).size === 1 ? '' : 's'}</div>
     </div>
-    ${filledDeliverables.length > 0 ? `<div class="deliverables">${filledDeliverables.map((d, i) => `<div class="deliverable"><div class="ix">D${i + 1}</div><div class="name">${escapeHTML(d.name)}</div><div class="format">${escapeHTML(d.format || '—')}</div><div class="owner">${d.owner ? 'Owner · ' + escapeHTML(d.owner) : ''}</div></div>`).join('')}</div>` : '<p style="color:var(--text-faint);font-style:italic;">No deliverables added</p>'}
+    ${filledDeliverables.length > 0 ? `<div class="deliverables">${filledDeliverables.map((d, i) => `<div class="deliverable"><div class="ix">D${i + 1}</div><div class="name">${escapeHTML(d.name)}</div><div class="owner">${d.owner ? 'Owner · ' + escapeHTML(d.owner) : ''}</div></div>`).join('')}</div>` : '<p style="color:var(--text-faint);font-style:italic;">No deliverables added</p>'}
   </section>
 
   <section class="sec">
@@ -5351,7 +5369,7 @@ const buildPPTX = (project, template) => {
       const x = startX + (i % 2) * (colW + 200000);
       const y = startY + Math.floor(i / 2) * (rowH + 200000);
       delivShapes.push(ppsShape(++shapeIdCounter, 'Del' + i, x, y, colW, 1000000, d.name, { fontSize: 1800, bold: true, color: '262626' }));
-      const sub = (d.format ? d.format + ' · ' : '') + (d.owner ? 'Owner: ' + d.owner : '');
+      const sub = d.owner ? 'Owner: ' + d.owner : '';
       if (sub) delivShapes.push(ppsShape(++shapeIdCounter, 'DelSub' + i, x, y + 500000, colW, 500000, sub, { fontSize: 1400, color: '595959' }));
     });
   } else {
@@ -5666,7 +5684,7 @@ const renderStandaloneSlides = (project, template) => {
   if (filledDeliverables.length > 0) {
     delBody += '<div class="card-grid">';
     filledDeliverables.forEach((d) => {
-      delBody += '<div class="card"><div class="card-label">' + escapeHTML(d.format || '\u2014') + '</div><div class="card-name">' + escapeHTML(d.name) + '</div>' + (d.owner ? '<div class="card-owner">Owner \u00b7 ' + escapeHTML(d.owner) + '</div>' : '') + '</div>';
+      delBody += '<div class="card"><div class="card-name">' + escapeHTML(d.name) + '</div>' + (d.owner ? '<div class="card-owner">Owner \u00b7 ' + escapeHTML(d.owner) + '</div>' : '') + '</div>';
     });
     delBody += '</div>';
   } else {

@@ -22,9 +22,16 @@ const INTERVENTION_OPTIONS_BASE = [
   { value: 'ilt',             label: 'ILT (live or vILT)',         sub: 'instructor-led, live or virtual', quantitative: true,  unitLabel: 'hours of instruction', detailPrompt: 'Hours of instruction (e.g., 6 hrs)' },
   { value: 'workshop',        label: 'Workshop',                   sub: 'interactive live session',       quantitative: true,  unitLabel: 'hours of instruction', detailPrompt: 'Hours (e.g., 4 hrs)' },
   // Self-paced — map to eLearning / microlearning / video
-  { value: 'elearn',          label: 'eLearning',                  sub: 'self-paced digital module',      quantitative: true,  unitLabel: 'hours of content',     detailPrompt: 'Hours of content (e.g., 4 hrs)' },
+  { value: 'elearn',          label: 'eLearning',                  sub: 'self-paced digital module',      quantitative: true,  unitLabel: 'hours of content',     detailPrompt: 'Hours of content (e.g., 4 hrs)', tiers: [
+    { value: 'std', label: 'Standard (linear content)' },
+    { value: 'hi',  label: 'High interactivity (simulations, branching)' }
+  ] },
   { value: 'micro',           label: 'Microlearning',              sub: 'short focused module, ~5 min',   quantitative: true,  unitLabel: 'modules',              detailPrompt: 'Number of modules (e.g., 5 modules)' },
-  { value: 'video',           label: 'Video',                      sub: 'recorded video content',         quantitative: true,  unitLabel: 'minutes of finished video', detailPrompt: 'Minutes of finished video (e.g., 12 min)' },
+  { value: 'video',           label: 'Video',                      sub: 'recorded video content',         quantitative: true,  unitLabel: 'minutes of finished video', detailPrompt: 'Minutes of finished video (e.g., 12 min)', tiers: [
+    { value: 'mod',  label: 'Moderate (with graphics + edit)' },
+    { value: 'sim',  label: 'Simple (talking head, record + light edit)' },
+    { value: 'cplx', label: 'Complex (explainer + motion + sound)' }
+  ] },
   // Documents & aids — map to one-pager / job-aid
   { value: 'one-pager',       label: 'One-pager / quick reference', sub: 'single-page summary or reference', quantitative: true,  unitLabel: 'pages',              detailPrompt: 'Pages (e.g., 1 pp)' },
   { value: 'job-aid',         label: 'Job aid / playbook',          sub: 'in-flow reference',              quantitative: true,  unitLabel: 'pages',              detailPrompt: 'Pages (e.g., 24 pp)' },
@@ -97,6 +104,8 @@ const TEMPLATES = {
           { id: 'problemDetail',    label: 'Problem in detail', type: 'textarea', placeholder: 'Describe what is broken, how long it has been happening, and the evidence you have. Specifics beat narrative.' },
           { id: 'audienceRole',     label: 'Audience — role',      type: 'text', placeholder: 'e.g., new field sales hires' },
           { id: 'audienceSize',     label: 'Audience — size',      type: 'text', placeholder: 'e.g., 12–18 per cohort, 4 cohorts / year' },
+          { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 60' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., reps/yr' },
           { id: 'audienceContext',  label: 'Audience — context',   type: 'text', placeholder: 'e.g., Western region, ramp-critical first 90 days' },
           { id: 'businessCase',     label: 'Business case (optional)', type: 'businessCase' }
         ]
@@ -173,6 +182,8 @@ const TEMPLATES = {
           { id: 'problemDetail',   label: 'Problem in detail', type: 'textarea', placeholder: 'What does the first 90 days look like now? Where do new hires get stuck? What feedback do hiring managers and new hires give?' },
           { id: 'audienceRole',    label: 'Audience — role',     type: 'text', placeholder: 'e.g., new field technicians' },
           { id: 'audienceSize',    label: 'Audience — size',     type: 'text', placeholder: 'e.g., 8–12 per quarter' },
+          { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 40' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., hires/yr' },
           { id: 'audienceContext', label: 'Audience — context',  type: 'text', placeholder: 'e.g., field-based, multi-region, 24/7 shift coverage' },
           { id: 'businessCase',    label: 'Business case (optional)', type: 'businessCase' }
         ]
@@ -249,6 +260,8 @@ const TEMPLATES = {
           { id: 'problemDetail',   label: 'Current state vs. target state', type: 'textarea', placeholder: 'What is the gap today? Why is the change needed? What happens if adoption stalls?' },
           { id: 'audienceRole',    label: 'Audience — role',     type: 'text', placeholder: 'e.g., field sales reps + their managers' },
           { id: 'audienceSize',    label: 'Audience — size',     type: 'text', placeholder: 'e.g., 240 reps, 18 managers, 4 regional directors' },
+          { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 280' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., people/yr' },
           { id: 'audienceContext', label: 'Audience — context',  type: 'text', placeholder: 'e.g., multi-region, mobile-first, varying tech literacy' },
           { id: 'businessCase',    label: 'Business case (optional)', type: 'businessCase' }
         ]
@@ -325,6 +338,8 @@ const TEMPLATES = {
           { id: 'problemDetail',   label: 'What is the evidence', type: 'textarea', placeholder: 'Engagement scores? Retention of their teams? 360 feedback patterns? Specific incidents? What is the cost of not addressing it?' },
           { id: 'audienceRole',    label: 'Audience — role',     type: 'text', placeholder: 'e.g., first-time managers across 3 regions' },
           { id: 'audienceSize',    label: 'Audience — size',     type: 'text', placeholder: 'e.g., 24 managers, 3 cohorts of 8' },
+          { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 24' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., managers/yr' },
           { id: 'audienceContext', label: 'Audience — context',  type: 'text', placeholder: 'e.g., newly promoted within last 6 months, varied function' },
           { id: 'businessCase',    label: 'Business case (optional)', type: 'businessCase' }
         ]
@@ -401,6 +416,8 @@ const TEMPLATES = {
           { id: 'problemDetail',   label: 'Why this training is required', type: 'textarea', placeholder: 'Cite the regulation, the audit cycle, the documentation needed. What is the consequence of non-compliance?' },
           { id: 'audienceRole',    label: 'Audience — role',     type: 'text', placeholder: 'e.g., field staff + office staff (subset of modules)' },
           { id: 'audienceSize',    label: 'Audience — size',     type: 'text', placeholder: 'e.g., 320 field staff + 80 office staff' },
+          { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 400' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., staff/yr' },
           { id: 'audienceContext', label: 'Audience — context',  type: 'text', placeholder: 'e.g., multi-shift, multi-region, varying tech access' },
           { id: 'businessCase',    label: 'Business case (optional)', type: 'businessCase' }
         ]
@@ -477,6 +494,8 @@ const TEMPLATES = {
           { id: 'problemDetail',   label: 'What is the evidence', type: 'textarea', placeholder: 'What does the data show? Where are the failure points? What is the cost of not addressing it?' },
           { id: 'audienceRole',    label: 'Audience — role',     type: 'text', placeholder: 'e.g., new field staff' },
           { id: 'audienceSize',    label: 'Audience — size',     type: 'text', placeholder: 'e.g., 60–80 hires per quarter' },
+          { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 280' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., hires/yr' },
           { id: 'audienceContext', label: 'Audience — context',  type: 'text', placeholder: 'e.g., field-based, no prior safety training, 1-week onboarding window' },
           { id: 'businessCase',    label: 'Business case (optional)', type: 'businessCase' }
         ]
