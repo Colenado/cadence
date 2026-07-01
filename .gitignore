@@ -26,5 +26,13 @@ scripts/
 test/
 _seed/
 
-# Temporary / local screenshots (the ones in screenshots/ are committed)
+# README screenshots (plan-top.png, plan-full.png, etc.) are committed.
+# Per-slide test screenshots and exports from playwright runs are not.
+screenshots/slide-*.png
+screenshots/exports/
+
+# Dev roadmap (kept in repo as a working doc, excluded from releases)
+PROPOSED_CHANGES.md
+
+# Temporary / local screenshots
 *.tmp.png

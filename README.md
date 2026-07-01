@@ -2,7 +2,7 @@
 
 A local-first project planner for Talent Development Professionals. Walk six steps, get a one-pager you can hand to anyone.
 
-**Try it in your browser:** [learn-cadence.netlify.app](https://learn-cadence.netlify.app/). No install required. Or download and run it locally (see Quick start below) if you want your projects to stay on your own device.
+**Try it in your browser:** [learn-cadence.netlify.app](https://learn-cadence.netlify.app/). No install required. Or download and run it locally (see Quick start below). Projects are stored in your browser's IndexedDB either way, so your data stays on your device regardless of which version you use.
 
 No accounts. No hosting. No "your data is in the cloud, trust us." Open the file, build the plan, email it to your VP. Done.
 
