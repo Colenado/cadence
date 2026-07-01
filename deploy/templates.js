@@ -261,7 +261,7 @@ const TEMPLATES = {
           { id: 'audienceRole',    label: 'Audience — role',     type: 'text', placeholder: 'e.g., field sales reps + their managers' },
           { id: 'audienceSize',    label: 'Audience — size',     type: 'text', placeholder: 'e.g., 240 reps, 18 managers, 4 regional directors' },
           { id: 'audienceReach',     label: 'Annual reach',  type: 'number', placeholder: 'e.g., 280' },
-          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., people/yr' },
+          { id: 'audienceReachUnit', label: 'Unit',           type: 'text',   placeholder: 'e.g., users/yr' },
           { id: 'audienceContext', label: 'Audience — context',  type: 'text', placeholder: 'e.g., multi-region, mobile-first, varying tech literacy' },
           { id: 'businessCase',    label: 'Business case (optional)', type: 'businessCase' }
         ]
